@@ -84,7 +84,7 @@ module OmniAuth
         verifier = request.params['code']
         redirect_uri = request.params['redirect_uri'] || request.params['callback_url']
 
-        log("[OAUTH DEBUG 2024-09-24] request.body.read: #{request.body.read}")
+        log_message("[OAUTH DEBUG 2024-09-24] request.body.read: #{request.body.read}")
         request.body.rewind
 
         if verifier && request.xhr?
@@ -136,7 +136,7 @@ module OmniAuth
         OmniAuth::MicrosoftGraph::DomainVerifier.verify!(auth_hash, access_token, options)
       end
 
-      def log(message)
+      def log_message(message)
         puts message
       end
     end
