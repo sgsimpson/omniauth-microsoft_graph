@@ -83,6 +83,10 @@ module OmniAuth
       def get_access_token(request)
         verifier = request.params['code']
         redirect_uri = request.params['redirect_uri'] || request.params['callback_url']
+
+        log("[OAUTH DEBUG 2024-09-24] request.body.read: #{request.body.read}")
+        request.body.rewind
+
         if verifier && request.xhr?
           client_get_token(verifier, redirect_uri || '/auth/microsoft_graph/callback')
         elsif verifier
@@ -131,6 +135,9 @@ module OmniAuth
       def verify_email(auth_hash, access_token)
         OmniAuth::MicrosoftGraph::DomainVerifier.verify!(auth_hash, access_token, options)
       end
+
+      def log(message)
+        puts message
     end
   end
 end
