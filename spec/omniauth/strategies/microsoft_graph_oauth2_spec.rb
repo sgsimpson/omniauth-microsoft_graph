@@ -457,4 +457,82 @@ describe OmniAuth::Strategies::MicrosoftGraph do
       end.to raise_error(OAuth2::Error)
     end
   end
+
+  describe 'Yammer profile endpoint support' do
+    describe '#profile_endpoint' do
+      context 'when no profile endpoint is determined' do
+        it 'defaults to Microsoft Graph profile URL' do
+          expect(subject.profile_endpoint).to eq('https://graph.microsoft.com/v1.0/me')
+        end
+      end
+
+      context 'when profile endpoint is already set' do
+        before { subject.instance_variable_set(:@profile_endpoint, 'https://custom.endpoint.com') }
+
+        it 'returns the previously set endpoint' do
+          expect(subject.profile_endpoint).to eq('https://custom.endpoint.com')
+        end
+      end
+    end
+
+    describe '#determine_profile_endpoint' do
+      let(:request) { double('Request', env: request_env) }
+
+      context 'when scope includes Yammer access_as_user scope' do
+        let(:request_env) { { 'omniauth.params' => { 'scope' => 'https://api.yammer.com/access_as_user' } } }
+
+        it 'returns Yammer profile URL' do
+          expect(subject.determine_profile_endpoint(request)).to eq('https://www.yammer.com/api/v1/users/current.json')
+        end
+      end
+
+      context 'when scope includes Yammer user_impersonation scope' do
+        let(:request_env) { { 'omniauth.params' => { 'scope' => 'openid profile https://api.yammer.com/user_impersonation' } } }
+
+        it 'returns Yammer profile URL' do
+          expect(subject.determine_profile_endpoint(request)).to eq('https://www.yammer.com/api/v1/users/current.json')
+        end
+      end
+
+      context 'when scope includes Yammer scope among other scopes' do
+        let(:request_env) { { 'omniauth.params' => { 'scope' => 'offline_access openid email profile https://api.yammer.com/access_as_user User.Read' } } }
+
+        it 'returns Yammer profile URL' do
+          expect(subject.determine_profile_endpoint(request)).to eq('https://www.yammer.com/api/v1/users/current.json')
+        end
+      end
+
+      context 'when scope includes multiple Yammer scopes' do
+        let(:request_env) { { 'omniauth.params' => { 'scope' => 'openid profile https://api.yammer.com/access_as_user https://api.yammer.com/user_impersonation' } } }
+
+        it 'returns Yammer profile URL' do
+          expect(subject.determine_profile_endpoint(request)).to eq('https://www.yammer.com/api/v1/users/current.json')
+        end
+      end
+
+      context 'when scope does not include any Yammer scopes' do
+        let(:request_env) { { 'omniauth.params' => { 'scope' => 'openid profile User.Read' } } }
+
+        it 'returns Microsoft Graph profile URL' do
+          expect(subject.determine_profile_endpoint(request)).to eq('https://graph.microsoft.com/v1.0/me')
+        end
+      end
+
+      context 'when scope is nil' do
+        let(:request_env) { { 'omniauth.params' => { 'scope' => nil } } }
+
+        it 'returns Microsoft Graph profile URL' do
+          expect(subject.determine_profile_endpoint(request)).to eq('https://graph.microsoft.com/v1.0/me')
+        end
+      end
+
+      context 'when omniauth.params is nil' do
+        let(:request_env) { { 'omniauth.params' => nil } }
+
+        it 'returns Microsoft Graph profile URL' do
+          expect(subject.determine_profile_endpoint(request)).to eq('https://graph.microsoft.com/v1.0/me')
+        end
+      end
+    end
+  end
 end

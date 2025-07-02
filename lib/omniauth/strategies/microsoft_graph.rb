@@ -6,6 +6,8 @@ module OmniAuth
       BASE_SCOPE_URL = 'https://graph.microsoft.com/'
       BASE_SCOPES = %w[offline_access openid email profile].freeze
       DEFAULT_SCOPE = 'offline_access openid email profile User.Read'.freeze
+      YAMMER_PROFILE_URL = 'https://www.yammer.com/api/v1/users/current.json'
+      MICROSOFT_GRAPH_PROFILE_URL = 'https://graph.microsoft.com/v1.0/me'
 
       option :name, :microsoft_graph
 
@@ -64,7 +66,7 @@ module OmniAuth
       end
 
       def raw_info
-        @raw_info ||= access_token.get('https://graph.microsoft.com/v1.0/me').parsed
+        @raw_info ||= access_token.get(profile_endpoint).parsed
       end
 
       def callback_url
@@ -73,10 +75,26 @@ module OmniAuth
 
       def custom_build_access_token
         access_token = get_access_token(request)
+        # Get the profile(microsoft graph / yammer) endpoint choice based on returned bearer token
+        @profile_endpoint = determine_profile_endpoint(request)
         access_token
       end
 
       alias build_access_token custom_build_access_token
+
+      def profile_endpoint
+        @profile_endpoint ||= MICROSOFT_GRAPH_PROFILE_URL
+      end
+
+      def determine_profile_endpoint(request)
+        scope = request&.env&.dig('omniauth.params', 'scope')
+
+        if scope&.include?('yammer')
+          YAMMER_PROFILE_URL
+        else
+          MICROSOFT_GRAPH_PROFILE_URL
+        end
+      end
 
       private
 
